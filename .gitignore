@@ -3,6 +3,9 @@
 ############################
 */.vscode/
 
+**/*.pdf
+**/*.jpg
+
 csv_processor/out/
 csv_processor/old/
 
