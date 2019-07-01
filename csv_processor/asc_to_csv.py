@@ -92,7 +92,7 @@ def get_metadata(table, data_start: int) -> dict:
         # This if/elif/... aka switch/case cascade should ideally be solved
         # using a dictionary, however the individual cases are treated so
         # differently that a lot of manual adjustment is necessary.
-        if "dasylab" in lrow:
+        if "software" in lrow:
             metadata["generated_by"] = row.strip()
         elif "aufgenommen" in lrow:
             date = dateutil.parser.parse(get_entry(row))
@@ -638,8 +638,8 @@ for subdir in [x for x in Path("in").iterdir() if x.is_dir()]:
                 # PDF Metadata:
                 d = pdf.infodict()
                 d["Title"] = plot_title
-                d["Author"] = "Gerrit Weiser"
-                d["Subject"] = "Tribometer Evaluation"
+                d["Author"] = "Your Name"
+                d["Subject"] = "Experiment Evaluation"
                 d["Keywords"] = ", ".join(metadata["experiment_id"].split("_"))
                 d["ModDate"] = datetime.now()
                 logging.info("Set PDF metadata.")

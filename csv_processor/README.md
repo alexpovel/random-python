@@ -53,28 +53,3 @@ That way, the joined 'seconds' and 'minutes' data only have one left-most date-t
 
 Two large dataframes result, one for each time type.
 Each is saved to its own `*.csv` file.
-
-## Questions
-
-- Concerning the S3 files for the T12 tribometer.
-
-  For the 'sek'-case, these have 'Sta2 [-]' as their last column.
-  The regular/'min' case has 'Linienlast1 [N/mm]'.
-  Are they synonymous?
-  Other tribometers (T14, dyn_T16, T16) don't have this ambiguity.
-
-## Other
-
-- Good `pandas` introduction: <https://youtu.be/5JnMutdy6Fw>
-
-- Maybe prefer HDF over CSV:
-
-  Fits to [our problem/hierarchy](https://www.neonscience.org/about-hdf5) and also is much [faster for both read/write](https://stackoverflow.com/a/42750132/11477374).
-
-- Thoughts on `pandas` by author: <https://wesmckinney.com/blog/apache-arrow-pandas-internals/>
-
-- Python feature/syntax/best-practices overviews:
-
-  - <https://www.youtube.com/watch?v=9ZxtaccqyWA>
-
-  - <https://www.youtube.com/watch?v=OSGv2VnC0go>
