@@ -3,6 +3,9 @@
 ############################
 .vscode/
 
+# Contains private URL
+joblookup/url.txt
+
 **/*.pdf
 **/*.jpg
 
