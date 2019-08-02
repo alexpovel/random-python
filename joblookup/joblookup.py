@@ -20,7 +20,10 @@ filepaths = {
     "url": os.path.join(base_dir, "url.txt"),
     # The website content itself, for debugging
     "website": os.path.join(base_dir, "webcontent.log"),
-    "searches": os.path.join(base_dir, "jobsearches.log")  # Previous searches
+    # Previous searches
+    "searches": os.path.join(base_dir, "jobsearches.log"),
+    # Logfile for geckodriver (else, it shows up in home)
+    "geckolog": os.path.join(base_dir, "geckodriver.log")
 }
 
 # Provide ability to get URL from command line argument
@@ -36,7 +39,7 @@ options = Options()
 options.headless = True  # Do not open window/display
 
 # Use Selenium to have JavaScript support
-driver = webdriver.Firefox(options=options)
+driver = webdriver.Firefox(options=options, service_log_path=filepaths["geckolog"])
 driver.get(url)
 time.sleep(5)  # Give it time to actually load
 html_source = driver.page_source  # Extract source code
@@ -44,7 +47,7 @@ html_source = driver.page_source  # Extract source code
 html_text = BeautifulSoup(html_source, "html.parser").text
 
 # Store a log for debugging the website content
-with open("jobsite.log", "w") as text_file:
+with open(filepaths["website"], "w") as text_file:
     text_file.write(html_text)
 
 match = re.search(r"(\d+)\svon\s\d+\sStellenangebote", html_text)
