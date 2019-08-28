@@ -1,2 +1,3 @@
-# random_python
-A bundle of meaningless Python scripts
+# Random Python
+
+A bundle of meaningless Python scripts.
