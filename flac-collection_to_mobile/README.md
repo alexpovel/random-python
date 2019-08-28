@@ -3,10 +3,14 @@
 Spotify, YouTube *etc.* are annoying.
 But any local, conventional music archive (that is, with lossless compressed or uncompressed files) very quickly grows too large for mobile devices.
 To have the entire personal music collection on a phone requires some converting.
-This is easily done, but this script is a bit smarter about it and skips existing files and just copies over already existing `mp3`s, among other things.
-It also preserves most/all metadata, something `ffmpeg` does by default, but its Python wrapper we use here (`pydub`) apparently struggles with (per default at least).
+This is easily done, but this script tries to be a bit smarter about it:
 
-The user can give a list of file formats that are to be converted, *e.g.* `flac`, `wav`, ...
+* skips existing files
+* just copies over already existing `mp3`s
+* copies over cover images that are found as raster images
+* traverses the input directory structure recursively and just mirrors it over to the export
+* also preserves most/all metadata, something [`ffmpeg` does by default](https://stackoverflow.com/questions/26109837/convert-flac-to-mp3-with-ffmpeg-keeping-all-metadata#comment68867375_26109838), but its Python wrapper we use here (`pydub`) apparently struggles with (per default at least).
+* the user can give a list of file formats that are to be converted, *e.g.* `flac`, `wav`, ...
 
 The target file format aka extension is also hard-coded into the script, not that it matters.
 Currently, this is `mp3` at the default bitrate of 128k.
