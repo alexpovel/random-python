@@ -3,14 +3,18 @@
 ############################
 .vscode/
 
-# Contains private URL
+# Contains private data
 joblookup/url.txt
+user_config.json
 
+# Output
 **/*.pdf
 **/*.jpg
 
 csv_processor/out/
 csv_processor/old/
+
+website.html
 
 ############################
 # Python premade:
