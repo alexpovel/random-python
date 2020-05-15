@@ -1,6 +1,7 @@
 #! /bin/env python3
 
 import json
+import random
 from importlib.resources import open_text
 from smtplib import SMTP_SSL
 
@@ -80,4 +81,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    fire_once_in = 10  # by chance, only fire every <int> calls
+    if not random.randrange(0, fire_once_in):  # fire on 0
+        main()
