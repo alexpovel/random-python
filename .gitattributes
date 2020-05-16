@@ -1,0 +1,2 @@
+# Exclude from GitHub linguist language detection
+csv_processor/in/* linguist-vendored
