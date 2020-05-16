@@ -2,6 +2,7 @@
 
 import json
 import random
+from functools import partial
 from importlib.resources import open_text
 from smtplib import SMTP_SSL
 
@@ -36,6 +37,18 @@ def strings_fuzzy_equality(*strings, threshold=0.98) -> bool:
     return strings_similarity(*strings) >= threshold
 
 
+def send_mail(
+    smtp_server, smtp_username, smtp_password, from_address, to_address, subject, body
+):
+    with SMTP_SSL(smtp_server) as smtp_connection:
+        smtp_connection.login(smtp_username, smtp_password)
+        smtp_connection.sendmail(
+            from_address,
+            to_address,
+            (f"Subject: {subject}\n\n{body}"),
+        )
+
+
 def main():
     # 403 Forbidden if no User-Agent set,
     # copied from visiting the site on Windows/Firefox
@@ -52,7 +65,20 @@ def main():
     email_config = config["email"]
     url = config["website"]["url"]
 
-    current_page = requests.get(url, headers=headers).text
+    mail = partial(
+        send_mail,
+        email_config["smtp_server"],
+        email_config["username"],
+        email_config["password"],
+        email_config["from_address"],
+        email_config["to_address"],
+    )
+
+    try:
+        current_page = requests.get("http://oijfrjoiroijr.com", headers=headers).text
+    except requests.ConnectionError as e:
+        mail(f"{url} is unreachable!", f"Got:\n\t{e}")
+        raise  # let it fail normally
 
     logfile = "website.html"
 
@@ -64,16 +90,7 @@ def main():
     else:  # no exception: file exists
         if not strings_fuzzy_equality(current_page, previous_page):
             pass  # TODO: only email in this block; for debugging, always email
-        with SMTP_SSL(email_config["smtp_server"]) as smtp_connection:
-            smtp_connection.login(email_config["username"], email_config["password"])
-            smtp_connection.sendmail(
-                email_config["from_address"],
-                email_config["to_address"],
-                (
-                    "Subject: Watched website changed significantly!\n\n"
-                    f"Check it out: {url}."
-                ),
-            )
+        mail("Watched website changed significantly!", f"Check it out: {url}")
     finally:
         # Log current page and be done
         with open(logfile, "w") as file:
