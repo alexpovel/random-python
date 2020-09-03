@@ -1,0 +1,11 @@
+image: python:3-slim-buster
+
+stages:
+  - test
+
+test:
+  stage: test
+  script:
+  - python -m pip install poetry
+  - poetry install
+  - poetry run tests
