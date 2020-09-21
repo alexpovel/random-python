@@ -17,8 +17,6 @@ from itertools import combinations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
-logging.basicConfig(level="DEBUG")
-
 PARSER = argparse.ArgumentParser(description=__doc__)
 
 # Because Windows is being stupid (defaults to cp1252), be explicit about encoding:
@@ -43,6 +41,10 @@ PARSER.add_argument(
     action="store_true",
 )
 
+PARSER.add_argument(
+    "-d", "--debug", help="Output detailed logging information.", action="store_true",
+)
+
 ARGS = PARSER.parse_args()
 
 if USE_CLIPBOARD := ARGS.clipboard:
@@ -54,6 +56,11 @@ LANG = ARGS.language
 
 BASE_DICT_PATH = THIS_DIR / Path("dicts")
 BASE_DICT_FILE = Path(LANG).with_suffix(".dic")
+
+
+if ARGS.debug:
+    # Leave at default if no logging/debugging requested.
+    logging.basicConfig(level="DEBUG")
 
 
 def read_linedelimited_file(file: Path) -> List[str]:
