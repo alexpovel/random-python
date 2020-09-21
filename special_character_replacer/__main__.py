@@ -200,6 +200,8 @@ def substitute_spans(
     for span in spans:
         start, end = span
         substitution = spans_to_substitutions[span]
+        # Dynamically modifying strings is bad (inefficient due to immutability), but
+        # felt more natural/easier and is unlikely to be an issue.
         string = string[:start] + substitution + string[end:]
     logging.debug(f"Turned '{original_string}' into '{string}'.")
     return string
