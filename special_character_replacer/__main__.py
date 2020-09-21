@@ -42,6 +42,14 @@ PARSER.add_argument(
 )
 
 PARSER.add_argument(
+    "-f",
+    "--force-all",
+    help="Force substitutions and return the text version with the maximum number of"
+    " substitutions, even if they are illegal words (useful for names).",
+    action="store_true",
+)
+
+PARSER.add_argument(
     "-d", "--debug", help="Output detailed logging information.", action="store_true",
 )
 
@@ -52,6 +60,7 @@ if USE_CLIPBOARD := ARGS.clipboard:
     # functionality is not desired.
     import pyperclip
 
+FORCE = ARGS.force_all
 LANG = ARGS.language
 
 BASE_DICT_PATH = THIS_DIR / Path("dicts")
@@ -61,6 +70,47 @@ BASE_DICT_FILE = Path(LANG).with_suffix(".dic")
 if ARGS.debug:
     # Leave at default if no logging/debugging requested.
     logging.basicConfig(level="DEBUG")
+
+
+def distinct_highest_element(iterable: Iterable, key=None) -> bool:
+    """Gets one element if it compares greater than all others according to some key.
+
+    For example, using `key=len`, the list `[(1, 2), (3, 4)]` has two tuples of the
+    same length: no value (2 and 2) compares greater than any other. The iterable
+    `[(1, 2), (3, 4), (5, 6, 7)]` has an element of length 3, which is greater than
+    the second-highest (here: longest, due to the `key`), returning that element.
+
+    If `key` is `None`, the values of elements are compared directly, instead of some
+    property (`key`) of those elements. As such, `[1, 1]` fails, but `[1, 1, 2]` etc.
+    returns the found element, `2`.
+
+    Args:
+        iterable: The iterable to be examined.
+        key: The key to compare the iterable elements by. The key must return a sortable
+            object (implementing at least `__lt__`). If None, element values are used
+            directly.
+
+    Returns:
+        The distinctly single-highest element according to the key criterion if it
+        exists, else None.
+    """
+    # If iterable is already sorted, Python's timsort will be very fast and little
+    # superfluous work will have to be done.
+    iterable = sorted(iterable, key=key)
+    highest = iterable[-1]
+
+    try:
+        second_highest = iterable[-2]
+    except IndexError:
+        # Iterable of length one necessarily has one distinct element.
+        return highest
+
+    if key is None:
+        if highest > second_highest:
+            return highest
+    if key(second_highest) < key(highest):
+        return highest
+    # Fell through, implicit `return None`
 
 
 def read_linedelimited_file(file: Path) -> List[str]:
@@ -311,7 +361,9 @@ def main():
                 # ones to substitute at. Therefore, get all possible combinations; in
                 # this example: the first, the second, and both (i.e., all combinations
                 # of all possible lengths).
-                span_combinations = combinations_any_length(spans_to_substitutions)
+                span_combinations = list(
+                    combinations_any_length(spans_to_substitutions)
+                )
                 logging.debug(f"All combinations to be tested are: {span_combinations}")
                 logging.debug(
                     f"The underlying mapping for the tests is: {spans_to_substitutions}"
@@ -327,16 +379,41 @@ def main():
                 ]
                 logging.debug(f"Word candidates for replacement are: {candidates}")
 
-                # Also check lowercase, since words that are usually lowercased
-                # (e.g. 'uebel') in the dictionary might appear capitalized, e.g. at
-                # the start of sentences ('Ueble Nachrede!')
-                legal_candidates = [
-                    candidate
-                    for candidate in candidates
-                    if candidate in known_words or candidate.lower() in known_words
-                ]
+                if FORCE:
+                    # There exists only one word with "the most substitions"; all others
+                    # have fewer. There is no ambiguity as long as the mapping of
+                    # alternative spellings to originals is bijective, e.g. 'ue' only
+                    # maps to 'ü' and vice versa. This is assumed to always be the case.
+                    #
+                    # Instead of this convoluted approach, we could also take the
+                    # *shortest* candidate, since substitutions generally shorten the
+                    # string (e.g. 'ue' -> 'ü'). The shortest string should also have
+                    # the most substitutions. However, with Unicode, you never know
+                    # how e.g. `len` will evaluate string lengths.
+                    # Therefore, get the word that *actually*, provably, has the most
+                    # substitutions (highest number of spans).
+                    most_spans = distinct_highest_element(span_combinations, key=len)
+                    assert most_spans
+
+                    word_with_most_subs = substitute_spans(
+                        item, most_spans, spans_to_substitutions
+                    )
+
+                    assert word_with_most_subs
+                    legal_candidates = [word_with_most_subs]
+                    legal_source = "forced"
+                else:
+                    # Also check lowercase, since words that are usually lowercased
+                    # (e.g. 'uebel') in the dictionary might appear capitalized, e.g. at
+                    # the start of sentences ('Ueble Nachrede!')
+                    legal_candidates = [
+                        candidate
+                        for candidate in candidates
+                        if candidate in known_words or candidate.lower() in known_words
+                    ]
+                    legal_source = "found in dictionary"
                 logging.debug(
-                    "Legal (found in dictionary) word candidates for replacement"
+                    f"Legal ({legal_source}) word candidates for replacement"
                     f" are: {legal_candidates}"
                 )
 
