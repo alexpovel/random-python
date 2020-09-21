@@ -259,6 +259,11 @@ def substitute_spans(
         substitution = spans_to_substitutions[span]
         # Dynamically modifying strings is bad (inefficient due to immutability), but
         # felt more natural/easier and is unlikely to be an issue.
+
+        # Cannot use `str.translate`, because the translation of e.g. 'ue' to 'ü' would
+        # be done on the entire string at once. There exists words for which this is not
+        # suitable, e.g. 'Kuechenfeuer' -> 'Küchenfeuer': two 'ue', only one of which is
+        # to be replaced.
         string = string[:start] + substitution + string[end:]
     logging.debug(f"Turned '{original_string}' into '{string}'.")
     return string
