@@ -240,7 +240,7 @@ def represent_strings(
     delimiters = tuple(delimiter * multiple_strings for delimiter in delimiters)
 
     if len(strings) == 1:
-        # These assertions resulted from what used to be a comment; it is very wordy
+        # These assertions resulted from what used to be a comment; it is a very wordy
         # and duplicated effort to assert correctness of the above trickery instead of
         # using a more straightforward approach. This is just for fun.
         assert all(not delimiter for delimiter in delimiters)
@@ -313,6 +313,9 @@ def main():
                 # of all possible lengths).
                 span_combinations = combinations_any_length(spans_to_substitutions)
                 logging.debug(f"All combinations to be tested are: {span_combinations}")
+                logging.debug(
+                    f"The underlying mapping for the tests is: {spans_to_substitutions}"
+                )
 
                 # Special words can be problematic, e.g. 'Abenteuer'. The algorithm
                 # finds 'ue', but the resulting word 'Abenteür' is illegal. Therefore,
@@ -338,6 +341,7 @@ def main():
                 )
 
                 if legal_candidates:
+                    # ONLY assign to `item` if legal candidates were found at all.
                     # If no legal candidates, all substitutions were wrong: do not
                     # reassign to `item`, so e.g. 'Abenteuer' stays 'Abenteuer'.
                     item = represent_strings(legal_candidates)
