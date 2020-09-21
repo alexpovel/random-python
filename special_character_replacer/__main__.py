@@ -300,6 +300,7 @@ def represent_strings(
 
 
 def main():
+    """Perhaps overloaded with logic, but a lot of lines are comments/logging."""
     text = pyperclip.paste() if USE_CLIPBOARD else sys.stdin.read()
 
     word_regex = re.compile(r"(\w+)")
