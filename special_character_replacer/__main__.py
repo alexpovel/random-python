@@ -293,7 +293,7 @@ def represent_strings(
         # These assertions resulted from what used to be a comment; it is a very wordy
         # and duplicated effort to assert correctness of the above trickery instead of
         # using a more straightforward approach. This is just for fun.
-        assert all(not delimiter for delimiter in delimiters)
+        assert not any(delimiters)
         assert separator.join(strings) == strings[0]
 
     return delimiters[0] + separator.join(strings) + delimiters[-1]
