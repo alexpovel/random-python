@@ -282,6 +282,10 @@ def parse(description: str, lang_choices: Iterable[str]) -> Dict[str, Any]:
     return vars(parser.parse_args())
 
 
+def get_input(use_clipboard=bool) -> str:
+    return pyperclip.paste() if use_clipboard else sys.stdin.read()
+
+
 def main():
     this_dir = Path(__file__).parent
 
@@ -302,7 +306,7 @@ def main():
 
     use_clipboard = args["clipboard"]
 
-    text: str = pyperclip.paste() if use_clipboard else sys.stdin.read()
+    text: str = get_input(use_clipboard=use_clipboard)
 
     word_regex = re.compile(r"(\w+)")
     assert (
