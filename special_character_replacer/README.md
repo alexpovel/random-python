@@ -10,7 +10,6 @@ python -m special_character_replacer -h
 
 ## ToDo
 
-- Implement binary search for dictionary (which comes sorted)
 - Write tests
 - Implement reverse mode (can be useful for training the dictionary and testing)
 - Implement clipboard backup
