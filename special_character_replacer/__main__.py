@@ -17,59 +17,11 @@ from itertools import combinations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
-PARSER = argparse.ArgumentParser(description=__doc__)
+import pyperclip
 
-# Because Windows is being stupid (defaults to cp1252), be explicit about encoding:
-open = partial(open, encoding="utf8")
-
-THIS_DIR = Path(__file__).parent
-
-with open(THIS_DIR / Path("language_specials").with_suffix(".json")) as f:
-    LANGUAGE_SPECIALS = json.load(f)
-
-
-PARSER.add_argument(
-    "language",
-    help="Text language to work with, in ISO 639-1 format.",
-    choices=LANGUAGE_SPECIALS,
-)
-
-PARSER.add_argument(
-    "-c",
-    "--clipboard",
-    help="Read from and write back to clipboard instead of STDIN/STDOUT.",
-    action="store_true",
-)
-
-PARSER.add_argument(
-    "-f",
-    "--force-all",
-    help="Force substitutions and return the text version with the maximum number of"
-    " substitutions, even if they are illegal words (useful for names).",
-    action="store_true",
-)
-
-PARSER.add_argument(
-    "-d", "--debug", help="Output detailed logging information.", action="store_true",
-)
-
-ARGS = PARSER.parse_args()
-
-if USE_CLIPBOARD := ARGS.clipboard:
-    # Allows script to be used without installing 3rd party packages if clipboard
-    # functionality is not desired.
-    import pyperclip
-
-FORCE = ARGS.force_all
-LANG = ARGS.language
-
-BASE_DICT_PATH = THIS_DIR / Path("dicts")
-BASE_DICT_FILE = Path(LANG).with_suffix(".dic")
-
-
-if ARGS.debug:
-    # Leave at default if no logging/debugging requested.
-    logging.basicConfig(level="DEBUG")
+# Because Windows is being stupid (defaults to cp1252), be explicit about encoding.
+# Provide this globally so no spot is forgotten.
+OPEN_UTF8 = partial(open, encoding="utf8")
 
 
 def distinct_highest_element(iterable: Iterable, key=None) -> bool:
@@ -114,14 +66,14 @@ def distinct_highest_element(iterable: Iterable, key=None) -> bool:
 
 
 def read_linedelimited_file(file: Path) -> List[str]:
-    with open(file) as f:
+    with OPEN_UTF8(file) as f:
         lines = f.read().splitlines()
     logging.debug(f"Fetched {type(lines)} containing {len(lines)} items from {file}")
     return lines
 
 
 def write_linedelimited_file(file: Path, lines: List[str]):
-    with open(file, "w") as f:
+    with OPEN_UTF8(file, "w") as f:
         f.write("\n".join(lines))
     logging.debug(f"Wrote file containing {len(lines)} lines to {file}")
 
@@ -148,9 +100,7 @@ def filter_strs_by_letter_occurrence(
 
 
 def prepare_processed_dictionary(
-    file: Path = BASE_DICT_PATH / Path("containing_specials_only") / BASE_DICT_FILE,
-    fallback_file: Path = BASE_DICT_PATH / BASE_DICT_FILE,
-    letter_filters: List[str] = None,
+    file: Path, fallback_file: Path, letter_filters: List[str] = None,
 ) -> List[str]:
     """Provides words from a pre-processed file or additionally creates it if not found.
 
@@ -169,10 +119,7 @@ def prepare_processed_dictionary(
         logging.debug("Found pre-processed list.")
     except FileNotFoundError:
         logging.debug("No pre-processed list found, creating from original.")
-        try:
-            items = read_linedelimited_file(fallback_file)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"Dictionary for '{LANG}' not available.") from e
+        items = read_linedelimited_file(fallback_file)
         logging.debug(f"Fetched unprocessed list.")
         items = list(filter_strs_by_letter_occurrence(items, letter_filters))
         write_linedelimited_file(file, items)
@@ -304,9 +251,58 @@ def represent_strings(
     return delimiters[0] + separator.join(strings) + delimiters[-1]
 
 
+def parse(description: str, lang_choices: Iterable[str]) -> Dict[str, Any]:
+    """Prepares, runs and returns parsing of CLI arguments for the script."""
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        "language",
+        help="Text language to work with, in ISO 639-1 format.",
+        choices=lang_choices,
+    )
+    parser.add_argument(
+        "-c",
+        "--clipboard",
+        help="Read from and write back to clipboard instead of STDIN/STDOUT.",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-f",
+        "--force-all",
+        help="Force substitutions and return the text version with the maximum number of"
+        " substitutions, even if they are illegal words (useful for names).",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        help="Output detailed logging information.",
+        action="store_true",
+    )
+    return vars(parser.parse_args())
+
+
 def main():
-    """Perhaps overloaded with logic, but a lot of lines are comments/logging."""
-    text = pyperclip.paste() if USE_CLIPBOARD else sys.stdin.read()
+    this_dir = Path(__file__).parent
+
+    with OPEN_UTF8(this_dir / Path("language_specials").with_suffix(".json")) as f:
+        language_specials = json.load(f)
+
+    args = parse(description=__doc__, lang_choices=language_specials)
+
+    if args["debug"]:
+        # Leave at default if no logging/debugging requested.
+        logging.basicConfig(level="DEBUG")
+
+    force: bool = args["force_all"]
+    lang: str = args["language"]
+
+    base_dict_path = this_dir / Path("dicts")
+    base_dict_file = Path(lang).with_suffix(".dic")
+
+    use_clipboard = args["clipboard"]
+
+    text: str = pyperclip.paste() if use_clipboard else sys.stdin.read()
 
     word_regex = re.compile(r"(\w+)")
     assert (
@@ -318,10 +314,17 @@ def main():
     # are supposed to be the special letters themselves.
     specials_to_regex_alts = {
         k.lower(): re.compile(v.casefold(), re.IGNORECASE)
-        for k, v in LANGUAGE_SPECIALS[LANG].items()
+        for k, v in language_specials[lang].items()
     }
 
-    known_words = prepare_processed_dictionary(letter_filters=specials_to_regex_alts)
+    try:
+        known_words = prepare_processed_dictionary(
+            file=base_dict_path / Path("containing_specials_only") / base_dict_file,
+            fallback_file=base_dict_path / base_dict_file,
+            letter_filters=specials_to_regex_alts,
+        )
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Dictionary for '{lang}' not available.") from e
 
     lines = text.splitlines()
     processed_lines = []
@@ -385,7 +388,7 @@ def main():
                 ]
                 logging.debug(f"Word candidates for replacement are: {candidates}")
 
-                if FORCE:
+                if force:
                     # There exists only one word with "the most substitions"; all others
                     # have fewer. There is no ambiguity as long as the mapping of
                     # alternative spellings to originals is bijective, e.g. 'ue' only
@@ -434,7 +437,7 @@ def main():
         logging.debug(f"Processed line reads: '{new_line}'")
         processed_lines.append(new_line)
     new_text = "\n".join(processed_lines)
-    if USE_CLIPBOARD:
+    if use_clipboard:
         pyperclip.copy(new_text)
     else:
         print(new_text)
