@@ -286,28 +286,32 @@ def get_input(use_clipboard=bool) -> str:
     return pyperclip.paste() if use_clipboard else sys.stdin.read()
 
 
-def main():
-    this_dir = Path(__file__).parent
+# def
 
-    with OPEN_UTF8(this_dir / Path("language_specials").with_suffix(".json")) as f:
-        language_specials = json.load(f)
 
-    args = parse(description=__doc__, lang_choices=language_specials)
+def substitute_specials(
+    text: str,
+    specials_to_alt_spellings: Dict[str, str],
+    known_words: Iterable[str],
+    force: bool,
+) -> str:
+    """Substitutes all alternative spellings with their proper version in a text.
 
-    if args["debug"]:
-        # Leave at default if no logging/debugging requested.
-        logging.basicConfig(level="DEBUG")
+    Args:
+        text: The text in which alternative spellings are to be replaced.
+        specials_to_alt_spellings: A mapping of special characters to their alternative
+            spellings.
+        known_words: A collection of known words against which potential candidates for
+            replacement are compared (since by far not all replacements possible as
+            per the mapping are also legal words).
+        force: Whether to force substitutions. If yes, will return the version of the
+            text with the most substitutions, regardless if these are legal words as per
+            the list of known words. This is useful for names.
 
-    force: bool = args["force_all"]
-    lang: str = args["language"]
-
-    base_dict_path = this_dir / Path("dicts")
-    base_dict_file = Path(lang).with_suffix(".dic")
-
-    use_clipboard = args["clipboard"]
-
-    text: str = get_input(use_clipboard=use_clipboard)
-
+    Returns:
+        The text with all alternative spellings of special characters in words replaced
+        with (legal) versions with proper (UTF-8) characters.
+    """
     word_regex = re.compile(r"(\w+)")
     assert (
         word_regex.groups == 1
@@ -317,18 +321,9 @@ def main():
     # it lowercases too aggressively. E.g., it will turn 'ß' into 'ss', while keys
     # are supposed to be the special letters themselves.
     specials_to_regex_alts = {
-        k.lower(): re.compile(v.casefold(), re.IGNORECASE)
-        for k, v in language_specials[lang].items()
+        special_character.lower(): re.compile(alt_spelling.casefold(), re.IGNORECASE)
+        for special_character, alt_spelling in specials_to_alt_spellings.items()
     }
-
-    try:
-        known_words = prepare_processed_dictionary(
-            file=base_dict_path / Path("containing_specials_only") / base_dict_file,
-            fallback_file=base_dict_path / base_dict_file,
-            letter_filters=specials_to_regex_alts,
-        )
-    except FileNotFoundError as e:
-        raise FileNotFoundError(f"Dictionary for '{lang}' not available.") from e
 
     lines = text.splitlines()
     processed_lines = []
@@ -356,7 +351,7 @@ def main():
                 spans_to_substitutions = {}
                 for special_letter, regex in specials_to_regex_alts.items():
                     for match in re.finditer(regex, item):
-                        logging.debug(f"Found a match ({match}) in item '{item}'.")
+                        logging.debug(f"Found a {match=} in {item=}.")
                         if any(letter.isupper() for letter in match.group()):
                             # Treat e.g. 'Ae', 'AE', 'aE' as uppercase 'Ä'
                             special_letter = special_letter.upper()
@@ -440,7 +435,48 @@ def main():
         new_line = "".join(processed_line)
         logging.debug(f"Processed line reads: '{new_line}'")
         processed_lines.append(new_line)
-    new_text = "\n".join(processed_lines)
+    return "\n".join(processed_lines)
+
+
+def main():
+    this_dir = Path(__file__).parent
+
+    with OPEN_UTF8(this_dir / Path("language_specials").with_suffix(".json")) as f:
+        language_specials: dict = json.load(f)
+
+    args = parse(description=__doc__, lang_choices=language_specials)
+
+    if args["debug"]:
+        # Leave at default if no logging/debugging requested.
+        logging.basicConfig(level="DEBUG")
+
+    language: str = args["language"]
+
+    base_dict_path = this_dir / Path("dicts")
+    base_dict_file = Path(language).with_suffix(".dic")
+
+    use_clipboard = args["clipboard"]
+
+    text: str = get_input(use_clipboard=use_clipboard)
+
+    try:
+        known_words = prepare_processed_dictionary(
+            file=base_dict_path / Path("containing_specials_only") / base_dict_file,
+            fallback_file=base_dict_path / base_dict_file,
+            letter_filters=language_specials[language].keys(),
+        )
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            f"Dictionary for {language=} not available (looked for '{e.filename}')"
+        ) from e
+
+    new_text = substitute_specials(
+        text=text,
+        specials_to_alt_spellings=language_specials[language],
+        known_words=known_words,
+        force=args["force_all"],
+    )
+
     if use_clipboard:
         pyperclip.copy(new_text)
     else:
