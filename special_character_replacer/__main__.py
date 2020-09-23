@@ -21,7 +21,8 @@ import pyperclip
 
 # Because Windows is being stupid (defaults to cp1252), be explicit about encoding.
 # Provide this globally so no spot is forgotten.
-OPEN_UTF8 = partial(open, encoding="utf8")
+ENCODING = "utf8"
+OPEN_WITH_ENCODING = partial(open, encoding=ENCODING)
 
 
 def distinct_highest_element(iterable: Iterable, key=None) -> bool:
@@ -66,14 +67,14 @@ def distinct_highest_element(iterable: Iterable, key=None) -> bool:
 
 
 def read_linedelimited_file(file: Path) -> List[str]:
-    with OPEN_UTF8(file) as f:
+    with OPEN_WITH_ENCODING(file) as f:
         lines = f.read().splitlines()
-    logging.debug(f"Fetched {type(lines)} containing {len(lines)} items from {file}")
+    logging.debug(f"Fetched list containing {len(lines)} items from {file}")
     return lines
 
 
 def write_linedelimited_file(file: Path, lines: List[str]):
-    with OPEN_UTF8(file, "w") as f:
+    with OPEN_WITH_ENCODING(file, "w") as f:
         f.write("\n".join(lines))
     logging.debug(f"Wrote file containing {len(lines)} lines to {file}")
 
@@ -289,10 +290,6 @@ def parse(description: str, lang_choices: Iterable[str]) -> Dict[str, Any]:
     return vars(parser.parse_args())
 
 
-def get_input(use_clipboard=bool) -> str:
-    return pyperclip.paste() if use_clipboard else sys.stdin.read()
-
-
 def substitute_alts_with_specials(
     text: str,
     specials_to_alt_spellings: Dict[str, str],
@@ -479,10 +476,18 @@ def substitute_specials_with_alts(
     return text.translate(trans)
 
 
+def backup_clipboard(text: str, file: Path):
+    """Writes text content to file for backup purposes."""
+    with OPEN_WITH_ENCODING(file, "w") as f:
+        f.write(text)
+
+
 def main():
     this_dir = Path(__file__).parent
 
-    with OPEN_UTF8(this_dir / Path("language_specials").with_suffix(".json")) as f:
+    with OPEN_WITH_ENCODING(
+        this_dir / Path("language_specials").with_suffix(".json")
+    ) as f:
         language_specials: dict = json.load(f)
 
     args = parse(description=__doc__, lang_choices=language_specials)
@@ -498,7 +503,17 @@ def main():
 
     use_clipboard = args["clipboard"]
 
-    text: str = get_input(use_clipboard=use_clipboard)
+    if use_clipboard:
+        text = pyperclip.paste()
+        backup_clipboard(text, file=this_dir / Path(".clip.bak"))
+        possible_empty_reason = "clipboard empty or binary (document, image, ...)"
+    else:
+        text = sys.stdin.read()
+        possible_empty_reason = "STDIN was empty"
+
+    if not text:
+        logging.debug(f"No text received, exiting ({possible_empty_reason}).")
+        return
 
     if args["reverse"]:
         new_text = substitute_specials_with_alts(text, language_specials[language])

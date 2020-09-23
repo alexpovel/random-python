@@ -3,3 +3,6 @@ dicts/*
 
 # Ship processed dictionaries though:
 !dicts/containing_specials_only
+
+# Clipboard (or general) backup file
+*.bak

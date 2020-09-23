@@ -11,4 +11,3 @@ python -m special_character_replacer -h
 ## ToDo
 
 - Write tests
-- Implement clipboard backup
