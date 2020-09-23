@@ -199,21 +199,21 @@ def substitute_spans(
     # later positions would get shifted.
     spans = sorted(spans, reverse=True)
 
-    original_string = string
-
+    # Cannot use `str.translate`, because the translation of e.g. 'ue' to 'ü' would
+    # be done on the entire string at once. There exists words for which this is not
+    # suitable, e.g. 'Kuechenfeuer' -> 'Küchenfeuer': two 'ue', only one of which is
+    # to be replaced.
+    chars = list(string)
     for span in spans:
         start, end = span
         substitution = spans_to_substitutions[span]
-        # Dynamically modifying strings is bad (inefficient due to immutability), but
-        # felt more natural/easier and is unlikely to be an issue.
-
-        # Cannot use `str.translate`, because the translation of e.g. 'ue' to 'ü' would
-        # be done on the entire string at once. There exists words for which this is not
-        # suitable, e.g. 'Kuechenfeuer' -> 'Küchenfeuer': two 'ue', only one of which is
-        # to be replaced.
-        string = string[:start] + substitution + string[end:]
-    logging.debug(f"Turned '{original_string}' into '{string}'.")
-    return string
+        # RHS has to be an iterable; since we join using the empty string later, no
+        # further action is needed (like putting the substitution into a 1-element
+        # tuple, which would keep the substitution string intact as one unit).
+        chars[start:end] = substitution
+    new_string = "".join(chars)
+    logging.debug(f"Turned '{string}' into '{new_string}'.")
+    return new_string
 
 
 def represent_strings(
