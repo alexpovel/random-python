@@ -269,8 +269,15 @@ def parse(description: str, lang_choices: Iterable[str]) -> Dict[str, Any]:
     parser.add_argument(
         "-f",
         "--force-all",
-        help="Force substitutions and return the text version with the maximum number of"
-        " substitutions, even if they are illegal words (useful for names).",
+        help="Force substitutions and return the text version with the maximum number"
+        " of substitutions, even if they are illegal words (useful for names).",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-r",
+        "--reverse",
+        help="Reverse mode, where all special characters are simply replaced"
+        " by their alternative spellings",
         action="store_true",
     )
     parser.add_argument(
@@ -286,10 +293,7 @@ def get_input(use_clipboard=bool) -> str:
     return pyperclip.paste() if use_clipboard else sys.stdin.read()
 
 
-# def
-
-
-def substitute_specials(
+def substitute_alts_with_specials(
     text: str,
     specials_to_alt_spellings: Dict[str, str],
     known_words: Iterable[str],
@@ -438,6 +442,43 @@ def substitute_specials(
     return "\n".join(processed_lines)
 
 
+def substitute_specials_with_alts(
+    text: str, specials_to_alt_spellings: Dict[str, str],
+):
+    """Replaces all special characters in a text with their alternative spellings.
+
+    No dictionary check is performed, since this operation is much simpler than its
+    reverse.
+
+    Args:
+        text: The string in which to do the substitutions.
+        specials_to_alt_spellings: A mapping of special characters to their alternative
+            spellings (like 'ä' -> 'ae'). Can be lower- or uppercase.
+
+    Returns:
+        The text with replacements made, in the correct case.
+    """
+    table = {}
+    for special_char, alt_spelling in specials_to_alt_spellings.items():
+        # Create a table mapping *both* lower- and uppercase of the special character
+        # to an appropriate replacement.
+        lower, upper = special_char.lower(), special_char.upper()
+        if len(lower) == 1:
+            # Translation table keys have to be of length one. However, special chars
+            # like can run into: 'ß'.lower() -> 'ss', which is not a valid key.
+            table[lower] = alt_spelling.lower()
+        if len(upper) == 1:
+            # I am unaware of any special chars where the upper() method returns a
+            # string longer 1, but just in case, it is included here.
+            #
+            # `str.title()` turns e.g. 'ae' into 'Ae', the appropriate replacement for
+            # the uppercase 'Ä' letter (as opposed to 'AE' from `str.upper()`).
+            table[upper] = alt_spelling.title()
+    # str.translate requires 'ordinals: string' mappings, not just 'string: string'
+    trans = str.maketrans(table)
+    return text.translate(trans)
+
+
 def main():
     this_dir = Path(__file__).parent
 
@@ -459,23 +500,26 @@ def main():
 
     text: str = get_input(use_clipboard=use_clipboard)
 
-    try:
-        known_words = prepare_processed_dictionary(
-            file=base_dict_path / Path("containing_specials_only") / base_dict_file,
-            fallback_file=base_dict_path / base_dict_file,
-            letter_filters=language_specials[language].keys(),
-        )
-    except FileNotFoundError as e:
-        raise FileNotFoundError(
-            f"Dictionary for {language=} not available (looked for '{e.filename}')"
-        ) from e
+    if args["reverse"]:
+        new_text = substitute_specials_with_alts(text, language_specials[language])
+    else:
+        try:
+            known_words = prepare_processed_dictionary(
+                file=base_dict_path / Path("containing_specials_only") / base_dict_file,
+                fallback_file=base_dict_path / base_dict_file,
+                letter_filters=language_specials[language].keys(),
+            )
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Dictionary for {language=} not available (looked for '{e.filename}')"
+            ) from e
 
-    new_text = substitute_specials(
-        text=text,
-        specials_to_alt_spellings=language_specials[language],
-        known_words=known_words,
-        force=args["force_all"],
-    )
+        new_text = substitute_alts_with_specials(
+            text=text,
+            specials_to_alt_spellings=language_specials[language],
+            known_words=known_words,
+            force=args["force_all"],
+        )
 
     if use_clipboard:
         pyperclip.copy(new_text)
