@@ -61,8 +61,9 @@ def distinct_highest_element(iterable: Iterable, key=None) -> bool:
     if key is None:
         if highest > second_highest:
             return highest
-    if key(second_highest) < key(highest):
-        return highest
+    else:
+        if key(second_highest) < key(highest):
+            return highest
     # Fell through, implicit `return None`
 
 
