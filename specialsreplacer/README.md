@@ -4,10 +4,13 @@ Replace alternative spellings of special characters in a given text.
 
 Usage help (invoke from one directory up):
 
-```python
+```bash
 python -m special_character_replacer -h
 ```
 
-## ToDo
+Better yet (also important for tests to run reliably) is to install this package on
+your system, in *editable* mode:
 
-- Write tests
+```bash
+pip install -e .
+```
