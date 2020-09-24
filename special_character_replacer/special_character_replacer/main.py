@@ -469,9 +469,10 @@ def substitute_specials_with_alts(
             # I am unaware of any special chars where the upper() method returns a
             # string longer 1, but just in case, it is included here.
             #
-            # `str.title()` turns e.g. 'ae' into 'Ae', the appropriate replacement for
-            # the uppercase 'Ä' letter (as opposed to 'AE' from `str.upper()`).
-            table[upper] = alt_spelling.title()
+            # `str.capitalize()` turns e.g. 'ae' into 'Ae', the appropriate
+            # representation for an uppercase 'Ä' letter (as opposed to 'AE' from
+            # `str.upper()`).
+            table[upper] = alt_spelling.capitalize()
     # str.translate requires 'ordinals: string' mappings, not just 'string: string'
     trans = str.maketrans(table)
     return text.translate(trans)
