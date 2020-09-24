@@ -413,15 +413,36 @@ def substitute_alts_with_specials(
                     legal_candidates = [word_with_most_subs]
                     legal_source = "forced"
                 else:
-                    # Also check lowercase, since words that are usually lowercased
-                    # (e.g. 'uebel') in the dictionary might appear capitalized, e.g. at
-                    # the start of sentences ('Ueble Nachrede!')
+                    # Check whether different, specific cases are legal words.
+                    if item.islower():
+                        # Lowercase stays lowercase:
+                        # 'uebel' -> 'übel',
+                        # but legally capitalized words are assumed to never occur
+                        # lowercased ('aepfel' is never replaced, to e.g. 'Äpfel')
+                        case_checks = [str.lower]
+                    else:
+                        # Includes all-caps, capitalized, title or mixed case.
+                        #
+                        # All-caps words ('AEPFEL') is to be replaced correctly
+                        # ('ÄPFEL'); however, 'ÄPFEL' is not a legal word. So check
+                        # the capitalized version ('Äpfel' -> legal) instead.
+                        #
+                        # Similarly for legally lowercased words, e.g. 'UEBEL':
+                        # 'Übel' -> illegal, but 'übel' -> legal, so also check `lower`.
+                        case_checks = [str.lower, str.capitalize]
+
+                    candidates_to_cases = {
+                        candidate: [case_check(candidate) for case_check in case_checks]
+                        for candidate in candidates
+                    }
+
                     legal_candidates = [
                         candidate
-                        for candidate in candidates
-                        if candidate in known_words or candidate.lower() in known_words
+                        for candidate, cases in candidates_to_cases.items()
+                        if any(case in known_words for case in cases)
                     ]
                     legal_source = "found in dictionary"
+
                 logging.debug(
                     f"Legal ({legal_source}) word candidates for replacement"
                     f" are: {legal_candidates}"
