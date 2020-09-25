@@ -37,9 +37,9 @@ just to name a few, pretty common examples.
 
 As such, this tool is based on a dictionary lookup, see also the [containing directory](specialsreplacer/dicts/).
 
-## Example
+## Examples
 
-See also the [tests](specialsreplacer/tests/).
+See also the [tests](tests/).
 
 ### de
 
@@ -75,19 +75,47 @@ is turned into:
 > Hierfür ist für den drögen Pöbel zu beachten, dass Anmaßungen zu Gehörverlust führen können.
 > Stroemelschnoesseldaemel!
 
-Note that some corrections are out of the scope of this little script, e.g.
+---
+
+Note that some corrections are out of scope for this little script, e.g.:
 
 > Busse
 
 In German, *Busse* and *Buße* are two words of vastly different meaning (*busses* and *penance*, respectively).
-The tool sees *Busse* (meaning *just that*, with no intent to change it), notices *Buße* is a legal substitution, and therefore makes it.
+Unfortunately, they map to the same alternative spelling of *Busse*.
+The tool sees *Busse* (meaning *just that*, with no intent of changing it), notices *Buße* is a legal substitution, and therefore makes it.
 The tool has no awareness of context.
 
-## Usage
+Turning substitutions like these off would mean the tool would no longer emit *Buße*, ever.
+This could be as undesirable as the current behaviour.
+There seems to be no easy resolve.
+
+## Running
+
+### Prerequisites
+
+Ideally, run the project (as is good, albeit annoying practice) in its own virtual environment.
+This project uses [poetry](https://python-poetry.org/) for dependency management.
+Refer to the [poetry config file](pyproject.toml) for more info (e.g. the required Python modules to install if you don't want to deal with `poetry`).
+
+Using poetry, from the project root, run:
+
+```bash
+# Install virtual environment according to lock file
+# (if available in repo),
+# otherwise pyproject.toml:
+poetry install
+# Run command within that environment:
+poetry run python -m specialsreplacer -h
+```
+
+### Usage
 
 Usage help (invoke from this project's root) will display all options:
 
 ```bash
+# Naked call:
+# (Alternatively, use poetry)
 python -m specialsreplacer -h
 ```
 
@@ -104,7 +132,15 @@ $ cat test.txt | python -m specialsreplacer de | python -m specialsreplacer -r d
 Hoeflich fragen!
 ```
 
-After installing (see below) the package, this call should work system-wide.
+or
+
+```bash
+python -m specialsreplacer -c de
+# Nothing happens: clipboard is read and written to
+# silently.
+```
+
+After installing (see below) the package, these calls should work system-wide.
 
 ---
 
