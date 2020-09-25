@@ -390,6 +390,24 @@ class TestMainDE:
                 nullcontext(),
             ),
             (
+                "DRPFA-Angehoerige gehoeren haeufig nicht dazu.",
+                False,
+                "DRPFA-Angehörige gehören häufig nicht dazu.",
+                nullcontext(),
+            ),
+            (
+                "Bindestrich-Woerter spraechen Baende ueber Fehler.",
+                False,
+                "Bindestrich-Wörter sprächen Bände über Fehler.",
+                nullcontext(),
+            ),
+            (
+                "Doppelgaenger-Doppelgaenger sind doppelt droelfzig.",
+                False,
+                "Doppelgänger-Doppelgänger sind doppelt droelfzig.",
+                nullcontext(),
+            ),
+            (
                 "Oder Uemlaeuten? Auslaeuten? Leute gaebe es, wuerde man meinen.",
                 False,
                 "Oder Uemlaeuten? Auslaeuten? Leute gäbe es, würde man meinen.",
@@ -439,6 +457,7 @@ class TestMainDE:
                 "Stroemelschnoesseldaemel",
                 nullcontext(),
             ),
+            # `force=True`
             ("Stroemelschnoesseldaemel", True, "Strömelschnößeldämel", nullcontext(),),
             ("ae", True, "ä", nullcontext(),),
             ("Ae", True, "Ä", nullcontext(),),
