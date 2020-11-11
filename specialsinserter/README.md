@@ -1,4 +1,4 @@
-# specialsreplacer
+# specialsinserter
 
 In a given text, replaces alternative spellings of special characters with their proper spellings.
 
@@ -11,7 +11,7 @@ For example, German special characters and their corresponding alternative spell
 |        Ü/ü        |        Ue/ue         |
 |        ẞ/ß        |        SS/ss         |
 
-These pairings are recorded [here](specialsreplacer/language_specials.json).
+These pairings are recorded [here](specialsinserter/language_specials.json).
 
 Going from left to right is simple: replace all special characters with their alternative spellings, minding case.
 That use case is also supported by this tool (reverse flag).
@@ -35,7 +35,7 @@ The other direction is much less straightforward: there exist countless words fo
 
 just to name a few, pretty common examples.
 
-As such, this tool is based on a dictionary lookup, see also the [containing directory](specialsreplacer/dicts/).
+As such, this tool is based on a dictionary lookup, see also the [containing directory](specialsinserter/dicts/).
 
 ## Examples
 
@@ -106,7 +106,7 @@ Using poetry, from the project root, run:
 # otherwise pyproject.toml:
 poetry install
 # Run command within that environment:
-poetry run python -m specialsreplacer -h
+poetry run python -m specialsinserter -h
 ```
 
 ### Usage
@@ -116,7 +116,7 @@ Usage help (invoke from this project's root) will display all options:
 ```bash
 # Naked call:
 # (Alternatively, use poetry)
-python -m specialsreplacer -h
+python -m specialsinserter -h
 ```
 
 The tool can read from STDIN (outputting to STDOUT), or work with the clipboard (overwriting its contents with a corrected version).
@@ -125,17 +125,17 @@ This allows for example:
 ```bash
 $ cat test.txt
 Hoeflich fragen!
-$ cat test.txt | python -m specialreplacer de
+$ cat test.txt | python -m specialsinserter de
 Höflich fragen!
 # Reverse mode:
-$ cat test.txt | python -m specialsreplacer de | python -m specialsreplacer -r de
+$ cat test.txt | python -m specialsinserter de | python -m specialsinserter -r de
 Hoeflich fragen!
 ```
 
 or
 
 ```bash
-python -m specialsreplacer -c de
+python -m specialsinserter -c de
 # Nothing happens: clipboard is read and written to
 # silently.
 ```
