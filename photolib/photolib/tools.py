@@ -218,7 +218,9 @@ class File(type(Path())):
 
         https://stackoverflow.com/a/56807917/11477374"""
         cls = self.__class__
-        return cls(str(self).removesuffix(self.full_suffix))
+        stub = str(self).removesuffix(self.full_suffix)
+        assert Path(stub + self.full_suffix) == self, "Path splitting went wrong."
+        return cls(stub)
 
 
 def cluster(files: Iterable[File]) -> dict[File, list[str]]:
@@ -399,7 +401,7 @@ class Library:
     def __getitem__(self, key):
         return self.files[key]
 
-    def __call__(self):
+    def __call__(self) -> Library:
         """Allows to work cache-free, aka fetch live files every time, by calling the
         instance:
             `library.image_files` -> uses cache
@@ -412,3 +414,16 @@ class Library:
         with open(Path(filename), "w", encoding="utf8") as f:
             for file in self:
                 f.write(str(file) + sep)
+
+    def rename_suffixes(self, debug=True):
+        self.clear_cache()  # For safety
+        for file in self:
+            stub, suffix = file.stub, file.full_suffix
+            if not suffix.islower():
+                suffix = suffix.lower()
+                target = stub.with_suffix(suffix)
+                logging.warning(f"Renaming {file.name} -> {target.name}")
+                if not debug:
+                    file.rename(target)
+            else:
+                logging.info(f"{file.name} already lowercase.")
