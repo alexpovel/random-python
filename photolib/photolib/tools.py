@@ -310,7 +310,7 @@ class Library:
         Returns:
             Sorted list of all file paths found matching the request MIME types.
         """
-        type_ = "subtype" if subtype else "type"
+        type_ = ("sub" if subtype else "") + "type"
         logging.debug(f"Fetching files by matching against these {type_}s: {types}.")
         files = []
         for type in types:
