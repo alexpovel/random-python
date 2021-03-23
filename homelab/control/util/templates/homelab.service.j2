@@ -1,0 +1,34 @@
+[Unit]
+Description=Homelab Server
+
+{# Using *both* "Requires" and "After" for Docker is fine:
+https://stackoverflow.com/q/40593242/11477374.
+`docker.service` also starts ("Requires") `docker.socket`, see (Debian 10):
+`cat /lib/systemd/system/docker.service`.
+Further, it runs "After" `network-online.target`, which of course we need for
+network access, NFS mounts etc., see also
+https://www.freedesktop.org/wiki/Software/systemd/NetworkTarget/ #}
+Requires=docker.service
+After=docker.service
+
+{# For hosting NFS shares into Docker containers.
+I did not verify this to help at all, it just sounds like it makes sense. #}
+Wants=nfs-client.target
+After=nfs-client.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+
+WorkingDirectory={{ workdir }}
+{# Allows user-installed Python modules to be found: #}
+User={{ user }}
+
+{# `poetry` standard installation installs into user's home, which is not on systemd's
+$PATH (which is very short). #}
+ExecStart={{ poetry }} run python -m control up --detach
+ExecStop={{ poetry }} run python -m control down
+
+{# Install section is required if run without timer #}
+[Install]
+WantedBy=multi-user.target

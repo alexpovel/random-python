@@ -1,0 +1,13 @@
+[Unit]
+Description=Schedule Homelab Backup
+
+[Timer]
+{# For timers, see
+https://www.freedesktop.org/software/systemd/man/systemd.time.html#Calendar%20Events
+https://unix.stackexchange.com/questions/479702/cannot-override-systemd-timer-with-specific-time #}
+OnCalendar=*-*-* 03:00:00
+{# If an event was missed, trigger immediately upon timer reactivation: #}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

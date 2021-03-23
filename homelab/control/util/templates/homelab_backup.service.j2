@@ -1,0 +1,15 @@
+[Unit]
+Description=Homelab Server Backup
+
+{# Of course, needs the server itself: #}
+Requires=homelab.service
+
+[Service]
+Type=oneshot
+
+WorkingDirectory={{ workdir }}
+{# Allows user-installed Python modules to be found: #}
+User={{ user }}
+
+{# `-T` to `exec`: https://github.com/docker/compose/issues/7306 #}
+ExecStart={{ poetry }} run python -m control lexec --exec_options='-T' 'com.example.backup_enabled' '/etc/backup.sh'
